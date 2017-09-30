@@ -188,6 +188,28 @@ object Stuart {
     }
   }
 
+  def containsAll(fullPathStr: String, strs: Array[String]): Boolean = {
+
+    for (str <- strs) {
+      if (!fullPathStr.contains(str))
+        return false
+    }
+    true
+  }
+
+  def recursivelyWriteAnonymized(spark: SparkSession, inputParentDir: File, outputDir: File, fullPathMandatoryStrings: Array[String], fileTypes: Array[String]) = {
+
+    val files = inputParentDir.listFiles.filter(file => containsAll(file.getAbsolutePath(), fullPathMandatoryStrings))
+
+    for (file <- files) {
+
+      println("processing " + file.toString)
+      writeAnonymizedCopyOfFile(spark, file.getAbsolutePath, outputDir.getAbsolutePath)
+    }
+
+
+  }
+
   /** Main entry point  */
   def main(args: Array[String]) {
     org.apache.log4j.Logger.getLogger("org").setLevel(org.apache.log4j.Level.OFF)
@@ -200,55 +222,23 @@ object Stuart {
     val outputDir = new File("output")
     outputDir.mkdirs()
 
-
-    // configuration to use deflate compression
-    spark.conf.set("spark.sql.avro.compression.codec", "deflate")
-    spark.conf.set("spark.sql.avro.deflate.level", "5")
-
-    spark.read.avro("resources/flatfiles/mesosmaster-stg-003_browse-data_processed_2017-09-27_site_id=253445_part-r-00000-9f3f8178-2fb8-4cba-ae34-3ea21725506e.avro")
-      .show()
-    spark.read.avro("output/_Users_stuart.robinson_repos_ml_CustomerAnonymizer2_resources_flatfiles_mesosmaster-stg-003_browse-data_processed_2017-09-27_site_id=253445_part-r-00000-9f3f8178-2fb8-4cba-ae34-3ea21725506e.avro/part-00000-3bfd36ab-e4f2-4037-b951-fa932b5faafb.avro")
-      .show()
+//    // configuration to use deflate compression
+//    spark.conf.set("spark.sql.avro.compression.codec", "deflate")
+//    spark.conf.set("spark.sql.avro.deflate.level", "5")
 
 
-        val d4 = spark.read.avro("resources/flatfiles/mesosmaster-stg-003_browse-data_processed_2017-09-27_site_id=253482_part-r-00000-9f3f8178-2fb8-4cba-ae34-3ea21725506e.avro")
-        d4.show()
 
+    recursivelyWriteAnonymized(spark, new File("resources/flatfiles"), outputDir, Array("resources", "flatfilesYEAH"), Array("parquet", "avro", "csv"))
 
-        val d5 = spark.read.avro("output/_Users_stuart.robinson_repos_ml_CustomerAnonymizer2_resources_flatfiles_mesosmaster-stg-003_browse-data_processed_2017-09-27_site_id=253482_part-r-00000-9f3f8178-2fb8-4cba-ae34-3ea21725506e.avro/part-00000-4920a084-059a-4310-a191-710a0587c8f7.avro")
-        d5.show()
-//
-    System.exit(0)
-    //    val d3 = spark.read.parquet("output/asdfasdf.parquet/part-00000-3eec51b7-83bf-415f-a95f-4d63fe9eae53-c000.snappy.parquet")
-    //    d3.show()
-    //
-    //    val df2 = spark.read.parquet("resources/flatfiles/hbase-stg-005_product_reconciled-orders-export_site_id=253445_part-r-00000-2324f0be-884b-4db2-b2a4-8f1425c59929.snappy.parquet")
-    //    df2.show()
-    //    df2.write.parquet("output/awegargaefawe.parquet")
-    //
-    //
-    //    val df = spark.read.avro("resources/flatfiles/mesosmaster-stg-003_browse-data_processed_2017-09-27_site_id=253445_part-r-00000-9f3f8178-2fb8-4cba-ae34-3ea21725506e.avro")
-    //    df.show()
-    //    df.printSchema()
-    //    df.write.parquet("output/asdfasdf.parquet")
-    //    df.write.avro("output/asdfasdf.avro")
+//    for (file <- new File("resources/flatfiles").listFiles) {
+//      println("processing " + file.toString)
+//      writeAnonymizedCopyOfFile(spark, file.getAbsolutePath, outputDir.getAbsolutePath)
+//    }
 
-
-    // writes out compressed Avro records
-
-    //
-    //
-    //
-    //
-    for (file <- new File("resources/flatfiles").listFiles) {
-      println("processing " + file.toString)
-      writeAnonymizedCopyOfFile(spark, file.getAbsolutePath, outputDir.getAbsolutePath)
-    }
-
-//    FileUtils.listFiles(outputDir, null, true).foreach(file => {
-//      println(file)
-//    })
-//    println("end of all files")
+    //    FileUtils.listFiles(outputDir, null, true).foreach(file => {
+    //      println(file)
+    //    })
+    //    println("end of all files")
 
     //
     FileUtils.listFiles(outputDir, Array("parquet", "avro"), true).foreach(file => {
