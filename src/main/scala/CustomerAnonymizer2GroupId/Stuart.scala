@@ -10,32 +10,13 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
 import scala.collection.JavaConversions._
-//
-//
-//import java.io.File
-//import java.nio.file.{Files, Paths}
-//import scala.collection.JavaConversions._
-//
-//import com.databricks.spark.avro._
-//import org.apache.commons.io.FileUtils
-//import org.apache.spark.sql.functions._
-//import org.apache.spark.sql.{DataFrame, SparkSession}
 
-/*
-
-NOTES - parquet anonymizing tool complete! per input file.  clean up a bit to make more usable.  turn into function with inputs: input and output file names
-
-TODO - do same for avro
- */
-
-/**
-  * Application entry point object.
-  */
+/** see def main */
 object Stuart {
 
   final val SPARK_APP_NAME = "StuartBrowseOrderAnonymizer"
 
-  //how can i combine these?
+  //TODO how can i combine these?
   def anonymizeLong: (Long => Int) = _.toString.hashCode
 
   def anonymizeString: (String => Int) = _.toString.hashCode
@@ -50,10 +31,6 @@ object Stuart {
   def displayParquetFiles(spark: SparkSession) = {
 
     val parquetFiles = new java.io.File("resources/flatfiles").listFiles.filter(_.getName.endsWith(".parquet"))
-
-    //    parquetFiles.foreach {
-    //      println
-    //    }
 
     println("")
 
@@ -77,10 +54,6 @@ object Stuart {
 
     val avroFiles = new java.io.File("resources/flatfiles").listFiles.filter(_.getName.endsWith(".avro"))
 
-    //    avroFiles.foreach {
-    //      println
-    //    }
-
     println("")
 
     for (file <- avroFiles) {
@@ -91,14 +64,12 @@ object Stuart {
       val updatedDf = table.withColumn("contact_id", udf(anonymizeLong).apply(col("contact_id")))
 
       table.show()
-      //      updatedDf.show()
-      //      updatedDf.printSchema()
     }
 
   }
 
   def anonymizeCols(frame: DataFrame, colNames: String*): DataFrame = {
-    var frameVar = frame //what is the right way to do this in scala? a more functional way?
+    var frameVar = frame //TODO what is the right way to do this in scala? a more functional way?
     frameVar.show()
 
     for (colName <- colNames) {
@@ -129,6 +100,7 @@ object Stuart {
     else if (file.getName.endsWith(".parquet")) {
       spark.read.load(file.toString)
     }
+    //TODO how read csv into dataframe?  none of these worked:
     //    else if (file.getName.endsWith(".csv")) {
     ////      spark.sql("SELECT * FROM csv.`" + file.toString + "`")
     //
@@ -147,7 +119,7 @@ object Stuart {
   }
 
   def anonymizeCustomerIdentifiers(spark: SparkSession, file: File): DataFrame = {
-    //    var output :DataFrame = null  //what's a better way to do this
+    //    var output :DataFrame = null  //TODO what's a better way to do this?
 
     val df = getDf(spark, file)
 
@@ -199,48 +171,14 @@ object Stuart {
 
   def recursivelyWriteAnonymized(spark: SparkSession, inputParentDir: File, outputDir: File, fullPathMandatoryStrings: Array[String], fileTypes: Array[String]) = {
 
-    val files = inputParentDir.listFiles.filter(file => containsAll(file.getAbsolutePath(), fullPathMandatoryStrings))
-
-    for (file <- files) {
+    for (file <- inputParentDir.listFiles.filter(file => containsAll(file.getAbsolutePath(), fullPathMandatoryStrings))) {
 
       println("processing " + file.toString)
       writeAnonymizedCopyOfFile(spark, file.getAbsolutePath, outputDir.getAbsolutePath)
     }
-
-
   }
 
-  /** Main entry point  */
-  def main(args: Array[String]) {
-    org.apache.log4j.Logger.getLogger("org").setLevel(org.apache.log4j.Level.OFF)
-
-    println("hello")
-    val spark = SparkSession.builder.master("local[2]").appName("SUnderstandingSparkSession").getOrCreate()
-    //    spark.read.json("resources/people.json").show()
-
-
-    val outputDir = new File("output")
-    outputDir.mkdirs()
-
-//    // configuration to use deflate compression
-//    spark.conf.set("spark.sql.avro.compression.codec", "deflate")
-//    spark.conf.set("spark.sql.avro.deflate.level", "5")
-
-
-
-    recursivelyWriteAnonymized(spark, new File("resources/flatfiles"), outputDir, Array("resources", "flatfilesYEAH"), Array("parquet", "avro", "csv"))
-
-//    for (file <- new File("resources/flatfiles").listFiles) {
-//      println("processing " + file.toString)
-//      writeAnonymizedCopyOfFile(spark, file.getAbsolutePath, outputDir.getAbsolutePath)
-//    }
-
-    //    FileUtils.listFiles(outputDir, null, true).foreach(file => {
-    //      println(file)
-    //    })
-    //    println("end of all files")
-
-    //
+  def displayOutput(spark: SparkSession, outputDir: File) = {
     FileUtils.listFiles(outputDir, Array("parquet", "avro"), true).foreach(file => {
       println(file)
       getDf(spark, file).show()
@@ -250,14 +188,28 @@ object Stuart {
       Files.readAllLines(file.toPath).subList(0, 10).foreach(println)
       println()
     })
+  }
 
-    //    for (file <- files2) {
-    //      println(file)
-    //    }
+  /** Main entry point  */
+  def main(args: Array[String]) {
+    org.apache.log4j.Logger.getLogger("org").setLevel(org.apache.log4j.Level.OFF)
+
+    println("o hi")
+    val spark = SparkSession.builder.master("local[2]").appName("SUnderstandingSparkSession").getOrCreate()
+
+
+    val outputDir = new File("output")
+    outputDir.mkdirs()
+
+    recursivelyWriteAnonymized(spark, new File("resources/flatfiles"), outputDir, Array("resources", "flatfilesYEAH"), Array("parquet", "avro", "csv"))
+
+    displayOutput(spark, outputDir)
+
     spark.stop()
   }
 }
 
+//    spark.read.json("resources/people.json").show()
 
 //    Files.f
 
