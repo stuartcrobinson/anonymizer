@@ -12,7 +12,7 @@ import scala.collection.JavaConversions._
 
 
 /** see def main */
-object Anonymizer {
+object AnonymizerHasher {
 
   final val SPARK_APP_NAME = "StuartBrowseOrderAnonymizer"
 
@@ -85,6 +85,9 @@ object Anonymizer {
 
   def containsAll(fullPathStr: String, strs: Array[String]): Boolean = {
 
+    if (strs == null || strs.isEmpty)
+      return true
+
     for (str <- strs) {
       if (!fullPathStr.contains(str))
         return false
@@ -114,6 +117,9 @@ object Anonymizer {
   def main(args: Array[String]) {
     org.apache.log4j.Logger.getLogger("org").setLevel(org.apache.log4j.Level.OFF)
     println("o hi")
+
+    //TODO talk to john melton about this - done
+    //TODO - don't hash.  use random mapping.  how ... ? - per df, put all useIDs in a set.  then put in list.  get random number between 0 and last index.  remove that and put in new list.  repeat.  new list index is new element's new userID.  put new list in map
 
     val spark = SparkSession.builder.master("local[2]").appName("SUnderstandingSparkSession").getOrCreate()
 
